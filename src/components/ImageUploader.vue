@@ -1,3 +1,9 @@
+<script lang="ts">
+export default {
+    name: 'ImageUploader'
+}
+</script>
+
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 

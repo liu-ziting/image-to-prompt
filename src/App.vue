@@ -2,11 +2,13 @@
 import { ref } from 'vue'
 import ImageUploader from './components/ImageUploader.vue'
 import PromptResult from './components/PromptResult.vue'
+import { promptConfigs, type PromptMode, modeLabels } from './prompt'
 
 // 应用状态
 const uploadedFile = ref<File | null>(null)
 const promptResult = ref<string>('')
 const isLoading = ref(false)
+const currentMode = ref<PromptMode>('detailed')
 
 const handleFileUploaded = (file: File) => {
     uploadedFile.value = file
@@ -31,8 +33,12 @@ const analyzeImage = async () => {
             const base64Data = base64String.split(',')[1]
 
             // 调用API
-            const response = await callZhipuAI(base64Data)
-            promptResult.value = response
+            const response = await callZhipuAI(base64Data, currentMode.value)
+            if (typeof response === 'string') {
+                promptResult.value = response
+            } else {
+                promptResult.value = await response
+            }
         }
         reader.readAsDataURL(uploadedFile.value)
     } catch (error) {
@@ -42,7 +48,8 @@ const analyzeImage = async () => {
     }
 }
 
-const callZhipuAI = async (base64Data: string): Promise<string> => {
+const callZhipuAI = async (base64Data: string, mode: PromptMode): Promise<string> => {
+    const config = promptConfigs[mode]
     const apiKey = 'a835b9f6866d48ec956d341418df8a50.NuhlKYn58EkCb5iP'
 
     try {
@@ -56,6 +63,10 @@ const callZhipuAI = async (base64Data: string): Promise<string> => {
                 model: 'GLM-4.1V-Thinking-Flash',
                 messages: [
                     {
+                        role: 'system',
+                        content: config.systemPrompt
+                    },
+                    {
                         role: 'user',
                         content: [
                             {
@@ -66,88 +77,7 @@ const callZhipuAI = async (base64Data: string): Promise<string> => {
                             },
                             {
                                 type: 'text',
-                                text:
-                                    //                                 `图片解析与MJ提示词生成
-
-                                    // ## 要求
-                                    // 请根据上传的图片生成一个可直接用于Midjourney的精准提示词，使用Markdown格式返回结果。
-
-                                    // ## 输出格式
-                                    // 请按照以下格式组织内容，使用恰当的Markdown标题和列表：
-
-                                    // ### 主体描述
-                                    // - 清晰描述图片中的主体对象
-                                    // - 包括人物/物体的特征、姿态、表情等细节
-
-                                    // ### 风格与艺术
-                                    // - 艺术风格（如超写实主义、赛博朋克等）
-                                    // - 可能的艺术家/IP参考
-                                    // - 色彩方案与光影效果
-
-                                    // ### 细节特征
-                                    // - 材质与纹理描述
-                                    // - 特殊细节或独特元素
-
-                                    // ### 构图与视角
-                                    // - 镜头类型与构图方式
-                                    // - 画面视角
-
-                                    // ### 氛围与情感
-                                    // - 画面传递的情绪或氛围
-
-                                    // ### Midjourney参数建议
-                                    // - 适合的MJ参数（如8k分辨率、unreal engine渲染等）
-
-                                    // ### 通用提示词
-                                    // -（总结）
-
-                                    // 请确保使用清晰的Markdown格式，包括恰当的标题层级和列表# 图片解析与MJ提示词生成提示词
-
-                                    // 请你作为专业的图像解析与提示词工程师，基于用户上传的图片，生成一个可直接用于Midjourney的精准提示词。请遵循以下规则：
-
-                                    // ## 1. 核心解析维度（必须包含）
-                                    // - 明确图片主体：人物/物体/场景的具体名称、特征（如“戴红色围巾的短发女孩”“悬浮在云层中的复古飞船”）。
-                                    // - 风格定义：画面的艺术风格（如“超写实主义”“赛博朋克动画”“莫奈印象派”“8-bit像素风”）、可能参考的艺术家/IP（如“宫崎骏风格”“Studio Ghibli”“Beeple数字艺术”）。
-                                    // - 细节描述：纹理（如“光滑金属质感”“粗糙麻布纹理”）、色彩（如“高饱和撞色”“低明度莫兰迪色系”）、光影（如“逆光剪影”“柔光漫射”“硬光强对比”）。
-                                    // - 构图与视角：镜头类型（如“特写镜头”“全景俯拍”“鱼眼镜头”）、构图方式（如“对称构图”“黄金分割构图”）。
-                                    // - 氛围与情感：画面传递的情绪（如“宁静治愈”“紧张悬疑”“未来科技感”）。
-                                    // - MJ参数提示：加入适配MJ的常用参数描述（如“8k分辨率”“极致细节”“cinematic lighting”“unreal engine渲染”）。
-                                    // `
-                                    `# 图片解析提示词生成
-
-## 角色
-你是「图像解析与提示词工程师」。
-
-## 任务
-根据用户上传的任意图片，生成可直接用于生成文本图片的精准提示词，并输出中文「通用提示词」。  
-请**严格按照下方 Markdown 结构**返回，不要增删任何标题或列表符号。
-
-### 主体描述
-- 主体名称与数量
-- 显著特征（服饰、发型、表情、姿态、动作）
-- 关键道具或配件
-
-### 风格与艺术
-- 艺术风格（超写实主义 / 赛博朋克 / 吉卜力 / 8-bit 像素 / 印象派 / 水墨等）
-- 参考艺术家或 IP（若有）
-- 色彩方案（主色 + 辅助色）
-- 光影效果（逆光 / 霓虹 / 柔光 / 体积光 / 高对比硬光）
-
-### 细节特征
-- 材质与纹理（金属拉丝 / 粗糙石面 / 丝绸光泽 / 玻璃折射）
-- 特殊细节（裂纹、粒子特效、机械关节、荧光纹路等）
-
-### 构图与视角
-- 镜头类型（特写 / 中景 / 广角 / 鱼眼 / 航拍）
-- 构图方式（对称 / 三分法 / 引导线 / 框架式）
-- 视角（低角度仰拍 / 俯视 / 第一人称 / 侧逆光剪影）
-
-### 氛围与情感
-- 整体氛围（宁静治愈 / 紧张悬疑 / 史诗恢弘 / 孤独寂寥）
-- 情绪关键词（温暖、冷酷、神秘、浪漫、压迫感）
-
-### 通用提示词
-- 用一句话概括画面：主体 + 场景 + 风格 + 氛围 + 关键细节`
+                                text: config.userPrompt
                             }
                         ]
                     }
@@ -182,6 +112,20 @@ const callZhipuAI = async (base64Data: string): Promise<string> => {
 
         <!-- 主卡片 -->
         <div class="main-card">
+            <!-- 模式选择 -->
+            <div class="mode-tabs">
+                <button
+                    v-for="(label, mode) in modeLabels"
+                    :key="mode"
+                    @click="currentMode = mode"
+                    :class="{ active: currentMode === mode }"
+                    :disabled="isLoading"
+                    class="mode-tab"
+                >
+                    {{ label }}
+                </button>
+            </div>
+
             <!-- 上传区域 -->
             <ImageUploader @file-uploaded="handleFileUploaded" />
 
@@ -326,6 +270,43 @@ body {
     display: flex;
     justify-content: center;
     margin-top: 32px;
+}
+
+.mode-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    background: #f3f4f6;
+    padding: 8px;
+    border-radius: 12px;
+}
+
+.mode-tab {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mode-tab:hover:not(:disabled) {
+    background: #e5e7eb;
+}
+
+.mode-tab.active {
+    background: white;
+    color: #4f46e5;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.mode-tab:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .analyze-button {

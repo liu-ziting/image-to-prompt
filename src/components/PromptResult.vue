@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { defineOptions } from 'vue'
+
+defineOptions({
+    name: 'PromptResult'
+})
 import { ref, defineProps, withDefaults, watch } from 'vue'
 import { marked } from 'marked'
 
@@ -67,10 +72,15 @@ const copyToClipboard = () => {
 
 watch(
     () => props.prompt,
-    newPrompt => {
+    async newPrompt => {
         showCopied.value = false
         // 将 Markdown 转换为 HTML
-        htmlPrompt.value = newPrompt ? marked(newPrompt) : ''
+        if (newPrompt) {
+            const result = await marked(newPrompt)
+            htmlPrompt.value = typeof result === 'string' ? result : ''
+        } else {
+            htmlPrompt.value = ''
+        }
     }
 )
 </script>
