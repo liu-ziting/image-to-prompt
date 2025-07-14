@@ -18,12 +18,51 @@ const htmlPrompt = ref('')
 const copyToClipboard = () => {
     if (!props.prompt) return
 
-    navigator.clipboard.writeText(props.prompt).then(() => {
+    // 创建临时textarea元素
+    const textarea = document.createElement('textarea')
+    textarea.value = props.prompt
+    textarea.style.position = 'fixed' // 防止页面滚动
+    document.body.appendChild(textarea)
+    textarea.select()
+
+    try {
+        // 尝试使用现代API
+        if (navigator.clipboard) {
+            navigator.clipboard
+                .writeText(props.prompt)
+                .then(() => {
+                    showCopiedToast()
+                })
+                .catch(() => {
+                    fallbackCopy()
+                })
+        } else {
+            // 使用传统方法
+            fallbackCopy()
+        }
+    } catch (e) {
+        fallbackCopy()
+    } finally {
+        document.body.removeChild(textarea)
+    }
+
+    function fallbackCopy() {
+        try {
+            const success = document.execCommand('copy')
+            if (success) {
+                showCopiedToast()
+            }
+        } catch (e) {
+            console.error('复制失败:', e)
+        }
+    }
+
+    function showCopiedToast() {
         showCopied.value = true
         setTimeout(() => {
             showCopied.value = false
         }, 2000)
-    })
+    }
 }
 
 watch(

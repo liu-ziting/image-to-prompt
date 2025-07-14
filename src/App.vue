@@ -220,7 +220,7 @@ const callZhipuAI = async (base64Data: string): Promise<string> => {
                             </svg>
                         </div>
                         <h3 class="feature-title">隐私保护</h3>
-                        <p class="feature-description">您的图片不会上传到服务器，所有处理在本地完成</p>
+                        <p class="feature-description">您的图片不会上传到服务器，所有处理都是一次性的</p>
                     </div>
 
                     <div class="feature-card">
@@ -448,14 +448,14 @@ body {
 
 @media (max-width: 768px) {
     .app-container {
-        padding: 16px;
+        padding: 16px 10px;
     }
     .app-title {
         font-size: 2rem;
     }
 
     .main-card {
-        padding: 24px;
+        padding: 24px 14px;
     }
 
     .analyze-button {
