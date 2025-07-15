@@ -109,7 +109,7 @@ watch(
                         <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
                     </svg>
                 </div>
-                <h3 class="result-title">图片提示词</h3>
+                <h3 class="result-title">Prompt</h3>
                 <button @click="copyToClipboard" class="copy-button">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -238,7 +238,6 @@ watch(
     padding: 6px 12px;
     border-radius: 6px;
     transition: all 0.2s;
-    margin-left: 8px;
 }
 
 .generate-button:hover {
