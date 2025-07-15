@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import ImageUploader from './components/ImageUploader.vue'
 import PromptResult from './components/PromptResult.vue'
+import ImageGenerator from './components/ImageGenerator.vue'
 import { promptConfigs, type PromptMode, modeLabels } from './prompt'
 
 // 应用状态
@@ -9,6 +10,8 @@ const uploadedFile = ref<File | null>(null)
 const promptResult = ref<string>('')
 const isLoading = ref(false)
 const currentMode = ref<PromptMode>('detailed')
+const generatedImage = ref<string>('')
+const isGeneratingImage = ref(false)
 
 const handleFileUploaded = (file: File) => {
     uploadedFile.value = file
@@ -23,6 +26,7 @@ const analyzeImage = async () => {
 
     isLoading.value = true
     promptResult.value = ''
+    generatedImage.value = '' // 清空上一次生成的图片
 
     try {
         // 将图片转换为base64
@@ -99,6 +103,52 @@ const callZhipuAI = async (base64Data: string, mode: PromptMode): Promise<string
         return 'API调用失败，请检查网络或API Key'
     }
 }
+
+const generateImage = async (prompt: string) => {
+    if (!prompt.trim()) {
+        alert('请先获取图片提示词！')
+        return
+    }
+
+    isGeneratingImage.value = true
+
+    try {
+        const apiKey = 'a835b9f6866d48ec956d341418df8a50.NuhlKYn58EkCb5iP'
+
+        const response = await fetch('https://open.bigmodel.cn/api/paas/v4/images/generations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: 'cogview-3-flash',
+                prompt: prompt,
+                size: '1024x1024',
+                n: 1,
+                style: 'vivid',
+                quality: 'standard'
+            })
+        })
+
+        if (!response.ok) {
+            throw new Error(`API请求失败: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        if (data.data && data.data[0] && data.data[0].url) {
+            generatedImage.value = data.data[0].url
+        } else {
+            throw new Error('未能获取生成的图片')
+        }
+    } catch (error) {
+        console.error('生成图片失败:', error)
+        alert('生成图片失败，请重试')
+    } finally {
+        isGeneratingImage.value = false
+    }
+}
 </script>
 
 <template>
@@ -133,15 +183,24 @@ const callZhipuAI = async (base64Data: string, mode: PromptMode): Promise<string
             <div class="action-section">
                 <button @click="analyzeImage" :disabled="isLoading || !uploadedFile" class="analyze-button" :class="{ disabled: isLoading || !uploadedFile }">
                     <span v-if="!isLoading">识别图片提示词</span>
-                    <span v-else>分析中...</span>
-                    <svg v-if="isLoading" class="spinner" viewBox="0 0 50 50">
+                    <span v-else>分析中</span>
+                    <!-- <svg v-if="isLoading" class="spinner" viewBox="0 0 50 50">
                         <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5"></circle>
-                    </svg>
+                    </svg> -->
                 </button>
             </div>
 
             <!-- 结果区域 -->
-            <PromptResult :prompt="promptResult" :is-loading="isLoading" />
+            <PromptResult :prompt="promptResult" :is-loading="isLoading" @generate-image="generateImage" />
+
+            <!-- AI生图结果 - 只在有生成图片或正在生成时显示 -->
+            <ImageGenerator
+                v-if="generatedImage || isGeneratingImage"
+                :generated-image="generatedImage"
+                :is-loading="isGeneratingImage"
+                :prompt="promptResult"
+                @generate-image="generateImage"
+            />
 
             <!-- 特性展示 -->
             <div class="features-section">
@@ -427,6 +486,8 @@ body {
     margin-top: auto;
 }
 
+/* 移除不再需要的生成按钮样式 */
+
 @media (max-width: 768px) {
     .app-container {
         padding: 16px 10px;
@@ -449,4 +510,3 @@ body {
     }
 }
 </style>
-
