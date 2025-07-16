@@ -10,7 +10,7 @@ const uploadedFile = ref<File | null>(null)
 const promptResult = ref<string>('')
 const isLoading = ref(false)
 const currentMode = ref<PromptMode>('detailed')
-const generatedImage = ref<string>('')
+const generatedImages = ref<string[]>([])
 const isGeneratingImage = ref(false)
 
 const handleFileUploaded = (file: File) => {
@@ -26,7 +26,7 @@ const analyzeImage = async () => {
 
     isLoading.value = true
     promptResult.value = ''
-    generatedImage.value = '' // 清空上一次生成的图片
+    generatedImages.value = [] // 清空上一次生成的图片
 
     try {
         // 将图片转换为base64
@@ -111,37 +111,72 @@ const generateImage = async (prompt: string) => {
     }
 
     isGeneratingImage.value = true
+    generatedImages.value = [] // 清空之前的图片
+
+    // 立即滚动到加载区域
+    setTimeout(() => {
+        const imageGenerator = document.querySelector('.generator-container')
+        console.log('找到图片生成器元素:', imageGenerator)
+
+        if (imageGenerator) {
+            // 计算滚动位置，让加载区域显示在视窗中央
+            const rect = imageGenerator.getBoundingClientRect()
+            const scrollTop = window.scrollY || document.documentElement.scrollTop
+            const targetPosition = scrollTop + rect.top - window.innerHeight / 2 + rect.height / 2
+
+            window.scrollTo({
+                top: targetPosition,
+                behavior: 'smooth'
+            })
+            console.log('执行滚动到加载区域，位置:', targetPosition)
+        } else {
+            console.log('未找到图片生成器元素')
+        }
+    }, 100)
 
     try {
         const apiKey = 'a835b9f6866d48ec956d341418df8a50.NuhlKYn58EkCb5iP'
 
-        const response = await fetch('https://open.bigmodel.cn/api/paas/v4/images/generations', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: 'cogview-3-flash',
-                prompt: prompt,
-                size: '1024x1024',
-                n: 1,
-                style: 'vivid',
-                quality: 'standard'
+        // 并发生成4张图片
+        const promises = Array.from({ length: 4 }, () =>
+            fetch('https://open.bigmodel.cn/api/paas/v4/images/generations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'cogview-3-flash',
+                    prompt: prompt,
+                    // size: '1024x1024',
+                    n: 1,
+                    style: 'vivid',
+                    quality: 'standard'
+                })
             })
-        })
+        )
 
-        if (!response.ok) {
-            throw new Error(`API请求失败: ${response.status}`)
+        const responses = await Promise.all(promises)
+        const images: string[] = []
+
+        for (const response of responses) {
+            if (!response.ok) {
+                console.error(`API请求失败: ${response.status}`)
+                continue
+            }
+
+            const data = await response.json()
+            if (data.data && data.data[0] && data.data[0].url) {
+                images.push(data.data[0].url)
+            }
         }
 
-        const data = await response.json()
-
-        if (data.data && data.data[0] && data.data[0].url) {
-            generatedImage.value = data.data[0].url
-        } else {
+        if (images.length === 0) {
             throw new Error('未能获取生成的图片')
         }
+
+        generatedImages.value = images
+        console.log('生成的图片数量:', images.length, images)
     } catch (error) {
         console.error('生成图片失败:', error)
         alert('生成图片失败，请重试')
@@ -195,8 +230,8 @@ const generateImage = async (prompt: string) => {
 
             <!-- AI生图结果 - 只在有生成图片或正在生成时显示 -->
             <ImageGenerator
-                v-if="generatedImage || isGeneratingImage"
-                :generated-image="generatedImage"
+                v-if="generatedImages.length > 0 || isGeneratingImage"
+                :generated-images="generatedImages"
                 :is-loading="isGeneratingImage"
                 :prompt="promptResult"
                 @generate-image="generateImage"

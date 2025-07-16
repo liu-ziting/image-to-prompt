@@ -6,13 +6,13 @@ defineOptions({
 })
 
 interface Props {
-    generatedImage?: string
+    generatedImages?: string[]
     isLoading?: boolean
     prompt?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    generatedImage: '',
+    generatedImages: () => [],
     isLoading: false,
     prompt: ''
 })
@@ -35,7 +35,7 @@ const handleGenerateImage = () => {
             <p class="loading-text">正在根据提示词生成图片，请稍候...</p>
         </div>
 
-        <div v-else-if="generatedImage" class="result-card">
+        <div v-else-if="generatedImages.length > 0" class="result-card">
             <div class="result-header">
                 <div class="header-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -44,7 +44,7 @@ const handleGenerateImage = () => {
                         <polyline points="21 15 16 10 5 21"></polyline>
                     </svg>
                 </div>
-                <h3 class="result-title">AI生成图片（模型决定效果，仅供参考）</h3>
+                <h3 class="result-title">Prompt To Image</h3>
                 <button @click="handleGenerateImage" class="regenerate-button">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="1 4 1 10 7 10"></polyline>
@@ -55,18 +55,15 @@ const handleGenerateImage = () => {
                 </button>
             </div>
             <div class="result-content">
-                <img :src="generatedImage" alt="AI生成的图片" class="generated-image" />
+                <div class="images-grid">
+                    <div v-for="(image, index) in generatedImages" :key="index" class="image-item">
+                        <img :src="image" :alt="`AI生成的图片 ${index + 1}`" class="generated-image" />
+                    </div>
+                </div>
+                <div class="model-info">
+                    <p class="model-text">模型决定效果，目前使用的国产智谱免费模型：cogview-3-flash，效果仅供参考！</p>
+                </div>
             </div>
-            <!-- <div v-if="generatedImage" class="download-section">
-                <a :href="generatedImage" download="ai-generated-image.png" class="download-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    <span>下载图片</span>
-                </a>
-            </div> -->
         </div>
 
         <div v-else class="empty-state">
@@ -177,45 +174,54 @@ const handleGenerateImage = () => {
     padding: 24px;
 }
 
-.generated-image {
-    width: 100%;
-    max-width: 512px;
-    height: auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    display: block;
+.images-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    max-width: 800px;
     margin: 0 auto;
 }
 
-.download-section {
-    padding: 0 24px 24px;
+.image-item {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.generated-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 1;
+    object-fit: cover;
+}
+
+.model-info {
+    margin-top: 20px;
     text-align: center;
+    padding: 12px 16px;
+    background-color: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
 }
 
-.download-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: linear-gradient(90deg, #16a34a, #22c55e);
-    color: white;
-    border: none;
-    padding: 10px 20px;
+.model-text {
     font-size: 14px;
-    font-weight: 500;
-    border-radius: 6px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.5;
 }
 
-.download-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-}
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .images-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
 
-.download-button svg {
-    width: 16px;
-    height: 16px;
+    .result-content {
+        padding: 16px;
+    }
 }
 
 .empty-state {
