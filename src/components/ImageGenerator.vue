@@ -61,7 +61,7 @@ const handleGenerateImage = () => {
                     </div>
                 </div>
                 <div class="model-info">
-                    <p class="model-text">模型决定效果，目前使用的国产智谱免费模型：cogview-3-flash，效果仅供参考！</p>
+                    <p class="model-text">当前使用国产智谱免费模型 cogview-3-flash，仅作效果预览，请切换专业生图模型以获得最佳效果</p>
                 </div>
             </div>
         </div>
@@ -178,7 +178,6 @@ const handleGenerateImage = () => {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
-    max-width: 800px;
     margin: 0 auto;
 }
 
