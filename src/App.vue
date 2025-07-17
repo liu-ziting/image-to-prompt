@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import ImageUploader from './components/ImageUploader.vue'
 import PromptResult from './components/PromptResult.vue'
 import ImageGenerator from './components/ImageGenerator.vue'
+import ParameterModal from './components/ParameterModal.vue'
 import { promptConfigs, type PromptMode, modeLabels } from './prompt'
 
 // 应用状态
@@ -14,6 +15,8 @@ const generatedImages = ref<string[]>([])
 const isGeneratingImage = ref(false)
 const recommendedSize = ref<{ width: number; height: number } | null>(null)
 const sizeInfo = ref<{ original: any; recommended: any; description: string; sizeString: string } | null>(null)
+const showParameterModal = ref(false)
+const currentGenerationSize = ref<{ width: number; height: number }>({ width: 1024, height: 1024 })
 
 const handleFileUploaded = (file: File) => {
     uploadedFile.value = file
@@ -112,7 +115,7 @@ const callZhipuAI = async (base64Data: string, mode: PromptMode): Promise<string
     }
 }
 
-const generateImage = async (prompt: string) => {
+const generateImage = async (prompt: string, customSize?: { width: number; height: number }) => {
     if (!prompt.trim()) {
         alert('请先获取图片提示词！')
         return
@@ -120,6 +123,13 @@ const generateImage = async (prompt: string) => {
 
     isGeneratingImage.value = true
     generatedImages.value = [] // 清空之前的图片
+
+    // 更新当前生成尺寸
+    if (customSize) {
+        currentGenerationSize.value = customSize
+    } else if (recommendedSize.value) {
+        currentGenerationSize.value = recommendedSize.value
+    }
 
     // 立即滚动到加载区域
     setTimeout(() => {
@@ -144,6 +154,7 @@ const generateImage = async (prompt: string) => {
 
     try {
         const apiKey = 'a835b9f6866d48ec956d341418df8a50.NuhlKYn58EkCb5iP'
+        const sizeToUse = customSize || recommendedSize.value || { width: 1024, height: 1024 }
 
         // 并发生成4张图片
         const promises = Array.from({ length: 4 }, () =>
@@ -156,7 +167,7 @@ const generateImage = async (prompt: string) => {
                 body: JSON.stringify({
                     model: 'cogview-3-flash',
                     prompt: prompt,
-                    size: recommendedSize.value ? `${recommendedSize.value.width}x${recommendedSize.value.height}` : '1024x1024',
+                    size: `${sizeToUse.width}x${sizeToUse.height}`,
                     n: 1,
                     style: 'vivid',
                     quality: 'hd'
@@ -191,6 +202,20 @@ const generateImage = async (prompt: string) => {
     } finally {
         isGeneratingImage.value = false
     }
+}
+
+const handleAdjustParameters = () => {
+    showParameterModal.value = true
+}
+
+const handleModalRegenerate = (params: { prompt: string; size: { width: number; height: number } }) => {
+    showParameterModal.value = false
+    promptResult.value = params.prompt
+    generateImage(params.prompt, params.size)
+}
+
+const handleModalClose = () => {
+    showParameterModal.value = false
 }
 </script>
 
@@ -242,7 +267,9 @@ const generateImage = async (prompt: string) => {
                 :generated-images="generatedImages"
                 :is-loading="isGeneratingImage"
                 :prompt="promptResult"
+                :current-size="currentGenerationSize"
                 @generate-image="generateImage"
+                @adjust-parameters="handleAdjustParameters"
             />
             <!-- 尺寸信息显示 -->
             <div v-if="sizeInfo && (generatedImages.length > 0 || isGeneratingImage)" class="size-info">
@@ -308,6 +335,15 @@ const generateImage = async (prompt: string) => {
                 <a href="https://xhs.lz-t.top/" target="_blank" rel="noopener">小红书解析</a>
             </p>
         </footer>
+
+        <!-- 参数调整弹框 -->
+        <ParameterModal
+            :visible="showParameterModal"
+            :current-prompt="promptResult"
+            :current-size="currentGenerationSize"
+            @close="handleModalClose"
+            @regenerate="handleModalRegenerate"
+        />
     </div>
 </template>
 

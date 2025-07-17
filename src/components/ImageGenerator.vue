@@ -9,22 +9,29 @@ interface Props {
     generatedImages?: string[]
     isLoading?: boolean
     prompt?: string
+    currentSize?: { width: number; height: number }
 }
 
 const props = withDefaults(defineProps<Props>(), {
     generatedImages: () => [],
     isLoading: false,
-    prompt: ''
+    prompt: '',
+    currentSize: () => ({ width: 1024, height: 1024 })
 })
 
 const emit = defineEmits<{
     generateImage: [prompt: string]
+    adjustParameters: []
 }>()
 
 const handleGenerateImage = () => {
     if (props.prompt) {
         emit('generateImage', props.prompt)
     }
+}
+
+const handleAdjustParameters = () => {
+    emit('adjustParameters')
 }
 </script>
 
@@ -45,14 +52,23 @@ const handleGenerateImage = () => {
                     </svg>
                 </div>
                 <h3 class="result-title">Prompt To Image</h3>
-                <button @click="handleGenerateImage" class="regenerate-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="1 4 1 10 7 10"></polyline>
-                        <polyline points="23 20 23 14 17 14"></polyline>
-                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-                    </svg>
-                    <span>重新生成</span>
-                </button>
+                <div class="header-buttons">
+                    <button @click="handleAdjustParameters" class="adjust-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+                        </svg>
+                        <span>调整参数</span>
+                    </button>
+                    <button @click="handleGenerateImage" class="regenerate-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="1 4 1 10 7 10"></polyline>
+                            <polyline points="23 20 23 14 17 14"></polyline>
+                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                        </svg>
+                        <span>重新生成</span>
+                    </button>
+                </div>
             </div>
             <div class="result-content">
                 <div class="images-grid">
@@ -146,6 +162,12 @@ const handleGenerateImage = () => {
     flex-grow: 1;
 }
 
+.header-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.adjust-button,
 .regenerate-button {
     display: flex;
     align-items: center;
@@ -161,13 +183,28 @@ const handleGenerateImage = () => {
     transition: all 0.2s;
 }
 
+.adjust-button:hover,
 .regenerate-button:hover {
     background-color: #dcfce7;
 }
 
+.adjust-button svg,
 .regenerate-button svg {
     width: 16px;
     height: 16px;
+}
+
+@media (max-width: 640px) {
+    .header-buttons {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .adjust-button,
+    .regenerate-button {
+        font-size: 13px;
+        padding: 5px 10px;
+    }
 }
 
 .result-content {
