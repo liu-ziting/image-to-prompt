@@ -6,25 +6,49 @@ export default {
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { getImageDimensions, getBestSize, formatSize, getSizeDescription } from '../utils/imageSize'
 
-const emit = defineEmits(['file-uploaded'])
+const emit = defineEmits(['file-uploaded', 'size-calculated'])
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const isDragging = ref(false)
 const previewUrl = ref<string | null>(null)
 
-const handleFile = (file: File) => {
+const handleFile = async (file: File) => {
     if (!file.type.match('image.*')) {
         alert('请上传图片文件！')
         return
     }
 
-    const reader = new FileReader()
-    reader.onload = e => {
-        previewUrl.value = e.target?.result as string
-        emit('file-uploaded', file)
+    try {
+        // 获取图片尺寸
+        const dimensions = await getImageDimensions(file)
+        const bestSize = getBestSize(dimensions.width, dimensions.height)
+
+        // 发出尺寸计算事件
+        emit('size-calculated', {
+            original: dimensions,
+            recommended: bestSize,
+            description: getSizeDescription(bestSize.width, bestSize.height),
+            sizeString: formatSize(bestSize.width, bestSize.height)
+        })
+
+        const reader = new FileReader()
+        reader.onload = e => {
+            previewUrl.value = e.target?.result as string
+            emit('file-uploaded', file)
+        }
+        reader.readAsDataURL(file)
+    } catch (error) {
+        console.error('获取图片尺寸失败:', error)
+        // 即使获取尺寸失败，也继续上传流程
+        const reader = new FileReader()
+        reader.onload = e => {
+            previewUrl.value = e.target?.result as string
+            emit('file-uploaded', file)
+        }
+        reader.readAsDataURL(file)
     }
-    reader.readAsDataURL(file)
 }
 
 const onFileChange = (e: Event) => {
@@ -206,7 +230,7 @@ const openFilePicker = () => {
 }
 
 .preview-image-container:hover .image-overlay {
-    opacity: 1;
+    opacity: 0;
 }
 
 .overlay-content {

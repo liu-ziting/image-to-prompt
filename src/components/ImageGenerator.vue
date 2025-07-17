@@ -191,7 +191,6 @@ const handleGenerateImage = () => {
     width: 100%;
     height: auto;
     display: block;
-    aspect-ratio: 1;
     object-fit: cover;
 }
 

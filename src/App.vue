@@ -12,10 +12,18 @@ const isLoading = ref(false)
 const currentMode = ref<PromptMode>('detailed')
 const generatedImages = ref<string[]>([])
 const isGeneratingImage = ref(false)
+const recommendedSize = ref<{ width: number; height: number } | null>(null)
+const sizeInfo = ref<{ original: any; recommended: any; description: string; sizeString: string } | null>(null)
 
 const handleFileUploaded = (file: File) => {
     uploadedFile.value = file
     promptResult.value = '' // 清除之前的结果
+}
+
+const handleSizeCalculated = (info: { original: any; recommended: any; description: string; sizeString: string }) => {
+    sizeInfo.value = info
+    recommendedSize.value = info.recommended
+    console.log('推荐尺寸:', info.sizeString, info.description)
 }
 
 const analyzeImage = async () => {
@@ -148,10 +156,10 @@ const generateImage = async (prompt: string) => {
                 body: JSON.stringify({
                     model: 'cogview-3-flash',
                     prompt: prompt,
-                    // size: '1024x1024',
+                    size: recommendedSize.value ? `${recommendedSize.value.width}x${recommendedSize.value.height}` : '1024x1024',
                     n: 1,
                     style: 'vivid',
-                    quality: 'standard'
+                    quality: 'hd'
                 })
             })
         )
@@ -212,7 +220,7 @@ const generateImage = async (prompt: string) => {
             </div>
 
             <!-- 上传区域 -->
-            <ImageUploader @file-uploaded="handleFileUploaded" />
+            <ImageUploader @file-uploaded="handleFileUploaded" @size-calculated="handleSizeCalculated" />
 
             <!-- 操作按钮 -->
             <div class="action-section">
@@ -236,6 +244,23 @@ const generateImage = async (prompt: string) => {
                 :prompt="promptResult"
                 @generate-image="generateImage"
             />
+            <!-- 尺寸信息显示 -->
+            <div v-if="sizeInfo && (generatedImages.length > 0 || isGeneratingImage)" class="size-info">
+                <div class="size-info-content">
+                    <div class="size-info-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <path d="M9 9h6v6H9z"></path>
+                        </svg>
+                    </div>
+                    <div class="size-info-text">
+                        <p class="size-info-title">智能尺寸推荐</p>
+                        <p class="size-info-details">
+                            原图：{{ sizeInfo.original.width }}×{{ sizeInfo.original.height }} → 推荐：{{ sizeInfo.sizeString }} ({{ sizeInfo.description }})
+                        </p>
+                    </div>
+                </div>
+            </div>
 
             <!-- 特性展示 -->
             <div class="features-section">
@@ -519,6 +544,50 @@ body {
     font-size: 0.9rem;
     padding-top: 20px;
     margin-top: auto;
+}
+
+.size-info {
+    margin-top: 16px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #0ea5e9;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.size-info-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.size-info-icon {
+    width: 24px;
+    height: 24px;
+    color: #0284c7;
+    flex-shrink: 0;
+}
+
+.size-info-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.size-info-text {
+    flex: 1;
+}
+
+.size-info-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0c4a6e;
+    margin: 0 0 4px 0;
+}
+
+.size-info-details {
+    font-size: 13px;
+    color: #0369a1;
+    margin: 0;
+    line-height: 1.4;
 }
 
 /* 移除不再需要的生成按钮样式 */
