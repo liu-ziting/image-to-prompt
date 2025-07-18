@@ -183,7 +183,7 @@ watch(
     align-items: center;
     justify-content: space-between;
     background-color: #eef2ff;
-    padding: 16px 24px;
+    padding: 16px;
     border-bottom: 1px solid #e5e7eb;
 }
 
